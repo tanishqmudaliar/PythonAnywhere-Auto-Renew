@@ -33,7 +33,7 @@ jobs:
 
       # --- KEEP ALIVE SECTION ---
       - name: Keep Workflow Alive
-        uses: gautamkrishnar/keepalive-workflow@v1
+        uses: gautamkrishnar/keepalive-workflow@v2
         with:
           # If no commits occur for 50 days, this action will push 
           # an empty commit to keep the schedule active.
