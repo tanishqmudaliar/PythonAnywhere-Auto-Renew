@@ -6,24 +6,50 @@ from urllib.parse import urljoin
 import time
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv()   # load variables from .env file
 
-USERNAME = os.environ.get('PA_USERNAME')
-PASSWORD = os.environ.get('PA_PASSWORD')
+# ------------------------------------------------------------
+# Helper to discover all accounts from environment variables
+# ------------------------------------------------------------
+def get_accounts_from_env():
+    """
+    Looks for variables like ACCOUNT_1_USERNAME, ACCOUNT_1_PASSWORD, ...
+    Returns a list of dicts: [{'username': ..., 'password': ...}, ...]
+    Also falls back to single PA_USERNAME/PA_PASSWORD if no multiple accounts found.
+    """
+    accounts = []
+    # First, try to find multiple accounts
+    i = 1
+    while True:
+        username = os.environ.get(f'ACCOUNT_{i}_USERNAME')
+        password = os.environ.get(f'ACCOUNT_{i}_PASSWORD')
+        if username and password:
+            accounts.append({'username': username, 'password': password})
+            i += 1
+        else:
+            # If we didn't find any at all, break
+            if i == 1:
+                break
+            # If we found some but the next is missing, stop searching
+            else:
+                break
 
-if not USERNAME or not PASSWORD:
-    print("❌ Error: PA_USERNAME and PA_PASSWORD must be set")
-    sys.exit(1)
+    # If no multiple accounts found, fall back to single-account variables
+    if not accounts:
+        single_user = os.environ.get('PA_USERNAME')
+        single_pass = os.environ.get('PA_PASSWORD')
+        if single_user and single_pass:
+            accounts.append({'username': single_user, 'password': single_pass})
 
-BASE_URL = "https://www.pythonanywhere.com"
-LOGIN_URL = f"{BASE_URL}/login/"
-DASHBOARD_URL = f"{BASE_URL}/user/{USERNAME}/webapps/"
-TASKS_PAGE_URL = f"{BASE_URL}/user/{USERNAME}/tasks_tab/"
-TASKS_API_URL = f"{BASE_URL}/api/v0/user/{USERNAME}/schedule/"
+    return accounts
 
-
-def login(session):
-    print(f"🔐 Logging in as {USERNAME}...")
+# ------------------------------------------------------------
+# Original functions (slightly adapted to take username/password)
+# ------------------------------------------------------------
+def login(session, username, password):
+    BASE_URL = "https://www.pythonanywhere.com"
+    LOGIN_URL = f"{BASE_URL}/login/"
+    print(f"🔐 Logging in as {username}...")
     login_page = session.get(LOGIN_URL, timeout=10)
     login_page.raise_for_status()
     soup = BeautifulSoup(login_page.content, 'html.parser')
@@ -35,8 +61,8 @@ def login(session):
 
     payload = {
         'csrfmiddlewaretoken': csrf_token,
-        'auth-username': USERNAME,
-        'auth-password': PASSWORD,
+        'auth-username': username,
+        'auth-password': password,
         'login_view-current_step': 'auth'
     }
     response = session.post(
@@ -60,7 +86,6 @@ def login(session):
 
 
 def get_webapp_expiry(soup, domain):
-    """Extracts the expiry date from the specific webapp's tab pane."""
     pane_id = f"id_{domain.replace('.', '_')}"
     pane = soup.find(id=pane_id)
     if pane:
@@ -70,7 +95,9 @@ def get_webapp_expiry(soup, domain):
     return "Unknown Date"
 
 
-def renew_webapps(session):
+def renew_webapps(session, username):
+    BASE_URL = "https://www.pythonanywhere.com"
+    DASHBOARD_URL = f"{BASE_URL}/user/{username}/webapps/"
     print("📊 Checking web apps...")
     time.sleep(1)
     dashboard = session.get(DASHBOARD_URL, timeout=10)
@@ -89,13 +116,11 @@ def renew_webapps(session):
         action = urljoin(BASE_URL, form['action'])
         domain = action.rstrip('/').split('/webapps/')[-1].replace('/extend', '')
         csrf = form.find('input', {'name': 'csrfmiddlewaretoken'})
-        
         if not csrf:
             print(f"❌ No CSRF token for {domain}, skipping")
             ok = False
             continue
 
-        # Get old expiry date directly from the HTML structure
         old_expiry = get_webapp_expiry(soup, domain)
 
         r = session.post(
@@ -104,13 +129,10 @@ def renew_webapps(session):
             headers={'Referer': DASHBOARD_URL},
             timeout=10
         )
-        
         if r.status_code == 200 and 'webapps' in r.url.lower():
-            # Fetch dashboard again to extract the New Expiry Date
             time.sleep(1)
             dash_after = session.get(DASHBOARD_URL, timeout=10)
             soup_after = BeautifulSoup(dash_after.content, 'html.parser')
-            
             new_expiry = get_webapp_expiry(soup_after, domain)
 
             detail = f"Web App: {domain} ({old_expiry} → {new_expiry})"
@@ -124,7 +146,10 @@ def renew_webapps(session):
     return ok, renewed_details
 
 
-def renew_scheduled_tasks(session):
+def renew_scheduled_tasks(session, username):
+    BASE_URL = "https://www.pythonanywhere.com"
+    TASKS_PAGE_URL = f"{BASE_URL}/user/{username}/tasks_tab/"
+    TASKS_API_URL = f"{BASE_URL}/api/v0/user/{username}/schedule/"
     print("🗓️ Checking scheduled tasks...")
     time.sleep(1)
     csrftoken = session.cookies.get('csrftoken')
@@ -151,18 +176,15 @@ def renew_scheduled_tasks(session):
         extend_url = task.get('extend_url')
         desc = task.get('command') or f"task {task.get('id')}"
         old_expiry = task.get('expiry')
-        
         if not extend_url:
             continue
-            
+
         resp = session.post(
             urljoin(BASE_URL, extend_url),
             headers={'X-CSRFToken': csrftoken, 'Referer': TASKS_PAGE_URL},
             timeout=10
         )
-        
         if resp.status_code == 200:
-            # Re-fetch task list to guarantee we get the updated expiry from the API
             time.sleep(1)
             r_after = session.get(TASKS_API_URL, headers={'Referer': TASKS_PAGE_URL}, timeout=10)
             new_expiry = old_expiry
@@ -171,17 +193,15 @@ def renew_scheduled_tasks(session):
                 new_expiry = next((t.get('expiry') for t in tasks_after if t.get('id') == task.get('id')), old_expiry)
             except ValueError:
                 pass
-                
+
             if new_expiry != old_expiry:
                 detail = f"Task: {desc} ({old_expiry} → {new_expiry})"
                 print(f"✅ Renewed scheduled task: {desc} ({old_expiry} → {new_expiry})")
                 renewed_details.append(detail)
             else:
-                # 🛠️ FIX: Treat unchanged dates as success (it just means it's already maxed out)
                 detail = f"Task: {desc} (Already maxed out at: {old_expiry})"
                 print(f"✅ Task {desc} returned 200 (expiry unchanged at {old_expiry} — already maxed out)")
                 renewed_details.append(detail)
-                # Removed 'ok = False' so it no longer fails the GitHub Action
         else:
             print(f"❌ Failed to renew scheduled task: {desc} (status {resp.status_code})")
             ok = False
@@ -190,42 +210,80 @@ def renew_scheduled_tasks(session):
     return ok, renewed_details
 
 
-def renew():
+def renew_account(username, password):
+    """Renew web apps and tasks for a single account."""
     session = requests.Session()
     session.headers.update({
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
     })
 
     try:
-        if not login(session):
-            return False
+        if not login(session, username, password):
+            return False, []
 
-        webapps_ok, webapps_renewed = renew_webapps(session)
-        tasks_ok, tasks_renewed = renew_scheduled_tasks(session)
-        
+        webapps_ok, webapps_renewed = renew_webapps(session, username)
+        tasks_ok, tasks_renewed = renew_scheduled_tasks(session, username)
         all_renewed = webapps_renewed + tasks_renewed
-        
-        # Write the details to a summary file for GitHub Actions to read
-        with open("renewal_summary.txt", "w", encoding="utf-8") as f:
-            if all_renewed:
-                for item in all_renewed:
-                    f.write(f"- {item}\n")
-            else:
-                f.write("- No items required renewal today.\n")
-
-        return webapps_ok and tasks_ok
+        return (webapps_ok and tasks_ok), all_renewed
 
     except requests.Timeout:
         print("❌ Request timed out")
-        return False
+        return False, []
     except requests.RequestException as e:
         print(f"❌ Network error: {e}")
-        return False
+        return False, []
     except Exception as e:
         print(f"❌ Unexpected error: {e}")
-        return False
+        return False, []
+
+
+# ------------------------------------------------------------
+# Main: loop over all accounts discovered from environment
+# ------------------------------------------------------------
+def main():
+    accounts = get_accounts_from_env()
+
+    if not accounts:
+        print("❌ No accounts found. Please set environment variables:")
+        print("   Either ACCOUNT_1_USERNAME/ACCOUNT_1_PASSWORD, ACCOUNT_2_..., etc.")
+        print("   Or fallback to PA_USERNAME/PA_PASSWORD.")
+        sys.exit(1)
+
+    all_summaries = []
+    overall_success = True
+
+    for idx, acc in enumerate(accounts, 1):
+        username = acc.get('username')
+        password = acc.get('password')
+        if not username or not password:
+            print(f"⚠️ Skipping account #{idx} – missing username or password")
+            continue
+
+        print(f"\n{'='*50}")
+        print(f"Processing account {idx}/{len(accounts)}: {username}")
+        print('='*50)
+
+        success, details = renew_account(username, password)
+        if not success:
+            overall_success = False
+
+        all_summaries.append(f"Account: {username}")
+        if details:
+            for d in details:
+                all_summaries.append(f"  - {d}")
+        else:
+            all_summaries.append("  - No items renewed (or nothing to renew).")
+        all_summaries.append("")
+
+    # Write combined summary to file (for GitHub Actions, etc.)
+    with open("renewal_summary.txt", "w", encoding="utf-8") as f:
+        if all_summaries:
+            f.write("\n".join(all_summaries))
+        else:
+            f.write("No accounts processed.\n")
+
+    sys.exit(0 if overall_success else 1)
 
 
 if __name__ == "__main__":
-    success = renew()
-    sys.exit(0 if success else 1)
+    main()
