@@ -1,6 +1,6 @@
 # PythonAnywhere Auto-Renewal Bot
 
-Automatically renew PythonAnywhere free-tier web apps and scheduled tasks every 15 days using GitHub Actions. Version 1.4.0 supports one or many accounts without requiring the legacy account variables.
+Automatically renews PythonAnywhere free-tier web apps and scheduled tasks every 15 days via GitHub Actions — supports one account or many, no legacy variables required.
 
 ![Python](https://img.shields.io/badge/Python-3.9+-3776AB?logo=python&logoColor=white)
 ![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-Automated-2088FF?logo=github-actions&logoColor=white)
@@ -172,8 +172,8 @@ Or click **"Use this template"** on GitHub.
 1. Go to your repository → **Settings** → **Secrets and variables** → **Actions**
 2. Click **New repository secret** and add:
 
-| Secret Name   | Value                        |
-| ------------- | ---------------------------- |
+| Secret Name   | Value                            |
+| ------------- | -------------------------------- |
 | `PA_USERNAME` | Optional legacy account username |
 | `PA_PASSWORD` | Optional legacy account password |
 
@@ -187,8 +187,8 @@ or to manage all accounts in one secret, use `ACCOUNT_CREDENTIALS_JSON`:
 
 ```json
 [
-  {"username": "account_one", "password": "password_one"},
-  {"username": "account_two", "password": "password_two"}
+  { "username": "account_one", "password": "password_one" },
+  { "username": "account_two", "password": "password_two" }
 ]
 ```
 
@@ -316,8 +316,8 @@ other complete account runs successfully.
 
 ```json
 [
-  {"username": "first_username", "password": "first_password"},
-  {"username": "second_username", "password": "second_password"}
+  { "username": "first_username", "password": "first_password" },
+  { "username": "second_username", "password": "second_password" }
 ]
 ```
 
@@ -330,13 +330,13 @@ incomplete entries are reported in the log.
 
 ### Environment Variables
 
-| Variable      | Description             | Required |
-| ------------- | ----------------------- | -------- |
-| `PA_USERNAME` | Optional PythonAnywhere username | No |
-| `PA_PASSWORD` | Optional PythonAnywhere password | No |
-| `ACCOUNT_N_USERNAME` | Optional numbered account username | No |
-| `ACCOUNT_N_PASSWORD` | Optional numbered account password | No |
-| `ACCOUNT_CREDENTIALS_JSON` | Optional JSON list or object of accounts | No |
+| Variable                   | Description                              | Required |
+| -------------------------- | ---------------------------------------- | -------- |
+| `PA_USERNAME`              | Optional PythonAnywhere username         | No       |
+| `PA_PASSWORD`              | Optional PythonAnywhere password         | No       |
+| `ACCOUNT_N_USERNAME`       | Optional numbered account username       | No       |
+| `ACCOUNT_N_PASSWORD`       | Optional numbered account password       | No       |
+| `ACCOUNT_CREDENTIALS_JSON` | Optional JSON list or object of accounts | No       |
 
 ### Schedule Customization
 
@@ -508,14 +508,7 @@ Made with ❤️ by [Tanishq Mudaliar](https://github.com/tanishqmudaliar)
 
 **Stop manually clicking that extend button. Automate it! 🚀**
 
-
-
-
-
-
 # Update
-
-
 
 ## same as before; but this time, you can create any number of env variables:
 
