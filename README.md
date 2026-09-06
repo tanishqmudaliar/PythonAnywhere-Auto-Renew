@@ -223,8 +223,8 @@ Expected output:
 ```
 🔐 Logging in as your_username...
 ✅ Login successful
-📊 Checking dashboard...
-ℹ️  No extend button found.
+📊 Checking web apps...
+ℹ️ No web apps found on this account.
    This usually means your app doesn't need renewal yet.
 ```
 
@@ -341,10 +341,10 @@ Together, these repositories provide:
 - Try logging in manually to confirm credentials work
 - Check if PythonAnywhere changed their login page
 
-### "No extend button found"
+### "No web apps found on this account"
 
 - This is normal, your app doesn't need renewal yet
-- The button only appears when renewal is due
+- The renewal form only appears when renewal is due
 - Logged as SUCCESS ✅ (not an error)
 
 ### "Task returned 200 (expiry unchanged... already maxed out)"

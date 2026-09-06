@@ -274,7 +274,11 @@ def renew_scheduled_tasks(session, username):
                 old_expiry,
             )
         except ValueError:
-            pass
+            details.append(
+                f"Task: {description} (renewed but refresh response was invalid)"
+            )
+            ok = False
+            continue
 
         if new_expiry == old_expiry:
             details.append(f"Task: {description} (Already maxed out at: {old_expiry})")

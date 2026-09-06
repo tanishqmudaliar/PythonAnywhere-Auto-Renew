@@ -11,13 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Generated `renewal_summary.txt` to capture detailed logs of renewed items and their old/new expiry dates.
-- GitHub Actions workflow step to read and append the renewal summary directly into `.github/logs/workflow_runs.log`.
+- Detailed account, web app, and scheduled-task results are written directly to
+  `.github/logs/workflow_runs.log`.
+- Support for optional legacy credentials, numbered account pairs, and JSON
+  account credentials.
 
 ### Changed
 
 - Web app expiry date extraction now uses robust HTML DOM parsing (via BeautifulSoup) instead of regex.
 - Scheduled tasks renewal now re-fetches the tasks API to guarantee accurate logging of the updated expiry date.
+- GitHub Actions now passes configured account credentials to the renewal script.
 
 ### Fixed
 
