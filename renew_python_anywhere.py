@@ -203,9 +203,6 @@ def renew_scheduled_tasks(session, username):
     tasks_api_url = f"{BASE_URL}/api/v0/user/{username}/schedule/"
     print("🗓️ Checking scheduled tasks...")
     time.sleep(1)
-    csrf_token = session.cookies.get("csrftoken")
-    if not csrf_token:
-        return False, ["Scheduled tasks: missing CSRF token"]
     response = session.get(
         tasks_api_url, headers={"Referer": tasks_page_url}, timeout=10
     )
@@ -225,6 +222,10 @@ def renew_scheduled_tasks(session, username):
     if not tasks:
         print("ℹ️ No scheduled tasks found on this account.")
         return True, details
+
+    csrf_token = session.cookies.get("csrftoken")
+    if not csrf_token:
+        return False, ["Scheduled tasks: missing CSRF token"]
 
     ok = True
     for task in tasks:
