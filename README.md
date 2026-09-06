@@ -507,3 +507,29 @@ This project is open source and available under the [MIT License](LICENSE).
 Made with ❤️ by [Tanishq Mudaliar](https://github.com/tanishqmudaliar)
 
 **Stop manually clicking that extend button. Automate it! 🚀**
+
+
+
+
+
+
+# Update
+
+
+
+## same as before; but this time, you can create any number of env variables:
+
+Create env variables:
+
+ACCOUNT_1_USERNAME
+ACCOUNT_1_PASSWORD
+
+ACCOUNT_2_USERNAME
+ACCOUNT_2_PASSWORD
+
+ACCOUNT_3_USERNAME
+ACCOUNT_3_PASSWORD
+
+and so on...
+
+fill it valid data and the code should renew webapps on all the accounts
