@@ -1,6 +1,6 @@
 # PythonAnywhere Auto-Renewal Bot
 
-Automatically renew your PythonAnywhere free web app every 15 days using GitHub Actions—never let your app expire again!
+Automatically renews PythonAnywhere free-tier web apps and scheduled tasks every 15 days via GitHub Actions — supports one account or many, no legacy variables required.
 
 ![Python](https://img.shields.io/badge/Python-3.9+-3776AB?logo=python&logoColor=white)
 ![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-Automated-2088FF?logo=github-actions&logoColor=white)
@@ -23,6 +23,7 @@ Automatically renew your PythonAnywhere free web app every 15 days using GitHub 
   - [Local Testing](#local-testing)
 - [Project Structure](#project-structure)
 - [Configuration](#configuration)
+- [Account Configuration Examples](#account-configuration-examples)
 - [Workflow Logs](#workflow-logs)
 - [Related Repositories](#related-repositories)
 - [Troubleshooting](#troubleshooting)
@@ -64,18 +65,23 @@ Day 30:  Bot auto-renews ✅
 - Scheduled renewal on the 1st and 15th of every month (04:00 UTC / 09:30 IST)
 - Manual trigger available from GitHub Actions tab
 - Automatic log commits prevent GitHub from disabling the workflow
+- Renews every configured account independently with a separate login session
 
 ### Logging & Monitoring
 
 - Complete audit trail in `.github/logs/workflow_runs.log`
-- Clear SUCCESS ✅ or FAILED ❌ status indicators
+- Clear SUCCESS, PARTIAL, or FAILED status indicators
 - Timestamps, run IDs, and trigger source for debugging
-- **Detailed summaries showing exactly which items were renewed and their old vs. new expiry dates**
+- Detailed per-account results showing exactly which items were renewed and
+  their old vs. new expiry dates
+- Explicit reporting for incomplete credentials, duplicate accounts, skipped
+  items, and request failures
 
 ### Security
 
-- Credentials stored as encrypted GitHub Secrets
-- Never exposed in logs or code
+- Credentials stored as encrypted GitHub Secrets or a local `.env` file
+- Passwords are never written to the committed audit log
+- GitHub Actions masks configured usernames and passwords in the live console
 - HTTPS for all PythonAnywhere connections
 
 ---
@@ -132,12 +138,13 @@ Day 30:  Bot auto-renews ✅
 
 ### How It Works
 
-1. GitHub Actions runs the workflow on the 1st and 15th of each month
-2. Python script logs into PythonAnywhere using your credentials
-3. Script navigates to the web apps dashboard
-4. If an "Extend" button is found, it clicks to renew
-5. Result (success/failure) is logged and committed
-6. Regular commits keep the workflow from being auto-disabled
+1. GitHub Actions runs the workflow on the 1st and 15th of each month.
+2. The script discovers complete `PA_*`, numbered, and JSON account
+   configurations.
+3. Each configured account gets its own authenticated session.
+4. The script renews web apps and scheduled tasks for that account.
+5. Results are written directly to `.github/logs/workflow_runs.log`.
+6. The workflow commits the detailed log and pushes it back to the repository.
 
 ---
 
@@ -145,7 +152,7 @@ Day 30:  Bot auto-renews ✅
 
 ### Prerequisites
 
-- PythonAnywhere free account with a web app
+- PythonAnywhere free account with a web app or scheduled task
 - GitHub account
 - 5 minutes of setup time
 
@@ -165,10 +172,25 @@ Or click **"Use this template"** on GitHub.
 1. Go to your repository → **Settings** → **Secrets and variables** → **Actions**
 2. Click **New repository secret** and add:
 
-| Secret Name   | Value                        |
-| ------------- | ---------------------------- |
-| `PA_USERNAME` | Your PythonAnywhere username |
-| `PA_PASSWORD` | Your PythonAnywhere password |
+| Secret Name   | Value                            |
+| ------------- | -------------------------------- |
+| `PA_USERNAME` | Optional legacy account username |
+| `PA_PASSWORD` | Optional legacy account password |
+
+For multiple accounts, add numbered secret pairs such as
+`ACCOUNT_1_USERNAME` and `ACCOUNT_1_PASSWORD`. Numbered pairs do not need to be
+consecutive. The `PA_*` pair is optional and can be used together with numbered
+pairs or omitted entirely.
+
+The workflow exposes numbered pairs 1 through 10. For more than ten accounts,
+or to manage all accounts in one secret, use `ACCOUNT_CREDENTIALS_JSON`:
+
+```json
+[
+  { "username": "account_one", "password": "password_one" },
+  { "username": "account_two", "password": "password_two" }
+]
+```
 
 #### Step 3: Enable Workflow Permissions
 
@@ -182,7 +204,8 @@ Or click **"Use this template"** on GitHub.
 1. Go to the **Actions** tab
 2. Click **Auto-Renew PythonAnywhere**
 3. Click **Run workflow** → **Run workflow**
-4. Verify logs show "✅ Login successful"
+4. Verify the run shows each configured account and creates a detailed entry in
+   `.github/logs/workflow_runs.log`.
 
 ### Local Testing
 
@@ -192,11 +215,26 @@ Or click **"Use this template"** on GitHub.
    pip install -r requirements.txt
    ```
 
-2. **Create `.env` file**
+2. **Create a `.env` file**
 
    ```env
    PA_USERNAME=your_username
    PA_PASSWORD=your_password
+   ```
+
+   The legacy pair is optional. Numbered local variables also work:
+
+   ```env
+   ACCOUNT_1_USERNAME=first_username
+   ACCOUNT_1_PASSWORD=first_password
+   ACCOUNT_3_USERNAME=third_username
+   ACCOUNT_3_PASSWORD=third_password
+   ```
+
+   Or use JSON for any number of accounts:
+
+   ```env
+   ACCOUNT_CREDENTIALS_JSON=[{"username":"first_username","password":"first_password"}]
    ```
 
 3. **Run the script**
@@ -204,14 +242,14 @@ Or click **"Use this template"** on GitHub.
    python renew_python_anywhere.py
    ```
 
-Expected output:
+The script writes the detailed result to `.github/logs/workflow_runs.log`.
+The terminal output includes one processing section per complete account:
 
 ```
 🔐 Logging in as your_username...
 ✅ Login successful
-📊 Checking dashboard...
-ℹ️  No extend button found.
-   This usually means your app doesn't need renewal yet.
+📊 Checking web apps...
+🗓️ Checking scheduled tasks...
 ```
 
 ---
@@ -233,16 +271,72 @@ PythonAnywhere-Auto-Renew/
 └── README.md                      # Project documentation
 ```
 
+## Account Configuration Examples
+
+### Legacy account only
+
+```env
+PA_USERNAME=main_username
+PA_PASSWORD=main_password
+```
+
+### Numbered accounts only
+
+```env
+ACCOUNT_1_USERNAME=first_username
+ACCOUNT_1_PASSWORD=first_password
+ACCOUNT_3_USERNAME=third_username
+ACCOUNT_3_PASSWORD=third_password
+```
+
+Account 2 may be absent. The script still discovers account 3.
+
+### Mixed legacy and numbered accounts
+
+```env
+PA_USERNAME=main_username
+PA_PASSWORD=main_password
+ACCOUNT_1_USERNAME=first_username
+ACCOUNT_1_PASSWORD=first_password
+```
+
+All complete unique accounts are processed. If the same credentials are
+configured twice, the duplicate is skipped and recorded as a warning.
+
+### Incomplete credentials
+
+```env
+ACCOUNT_2_USERNAME=missing_password
+```
+
+The account is not processed and the run is marked `PARTIAL` if at least one
+other complete account runs successfully.
+
+### JSON credentials
+
+```json
+[
+  { "username": "first_username", "password": "first_password" },
+  { "username": "second_username", "password": "second_password" }
+]
+```
+
+Store the JSON as the value of `ACCOUNT_CREDENTIALS_JSON`. Invalid JSON or
+incomplete entries are reported in the log.
+
 ---
 
 ## Configuration
 
 ### Environment Variables
 
-| Variable      | Description             | Required |
-| ------------- | ----------------------- | -------- |
-| `PA_USERNAME` | PythonAnywhere username | Yes      |
-| `PA_PASSWORD` | PythonAnywhere password | Yes      |
+| Variable                   | Description                              | Required |
+| -------------------------- | ---------------------------------------- | -------- |
+| `PA_USERNAME`              | Optional PythonAnywhere username         | No       |
+| `PA_PASSWORD`              | Optional PythonAnywhere password         | No       |
+| `ACCOUNT_N_USERNAME`       | Optional numbered account username       | No       |
+| `ACCOUNT_N_PASSWORD`       | Optional numbered account password       | No       |
+| `ACCOUNT_CREDENTIALS_JSON` | Optional JSON list or object of accounts | No       |
 
 ### Schedule Customization
 
@@ -265,37 +359,71 @@ Edit `.github/workflows/renew.yml` to change the cron schedule:
 
 Every run is logged to `.github/logs/workflow_runs.log`:
 
+Every run appends one detailed block to `.github/logs/workflow_runs.log`.
+`SUCCESS` means every configured account completed. `PARTIAL` means the
+renewals completed but at least one credential pair was incomplete.
+`FAILED` means at least one account renewal failed or no complete account was
+available.
+
 ### Success Entry
 
 ```
 ========================================
 Workflow Run: 2026-07-15 04:00:00 UTC
-Status: SUCCESS ✅
+Status: SUCCESS
 Trigger: schedule
 Repository: username/PythonAnywhere-Auto-Renew
 Branch: main
 Run ID: 123456789
-Run Number: 20
-Renewed Items:
-- Web App: tanishqmudaliar.pythonanywhere.com (Saturday 01 August 2026 → Tuesday 01 September 2026)
-- Task: python3 sync_logs.py (Already maxed out at: 2026-08-11)
+Configured accounts:
+- PA: mainuser
+- ACCOUNT_1: accountone
+Renewal details:
+- PA: SUCCESS
+  - Web App: mainuser.pythonanywhere.com (old date → new date)
+- ACCOUNT_1: SUCCESS
+  - Task: python3 sync.py (Already maxed out at: 2026-08-11)
 ========================================
 ```
 
-### Failure Entry
+### Partial Entry
 
 ```
 ========================================
 Workflow Run: 2026-07-15 04:00:00 UTC
-Status: FAILED ❌
+Status: PARTIAL
 Trigger: schedule
 Repository: username/PythonAnywhere-Auto-Renew
 Branch: main
 Run ID: 123456790
-Run Number: 21
-Note: Check GitHub Actions logs for error details
-Renewed Items (Partial/Failed Run):
-- Web App: tanishqmudaliar.pythonanywhere.com (Saturday 01 August 2026 → Tuesday 01 September 2026)
+Configured accounts:
+- PA: mainuser
+Incomplete or skipped credentials:
+- ACCOUNT_2_USERNAME/ACCOUNT_2_PASSWORD
+Renewal details:
+- PA: SUCCESS
+  - Web App: mainuser.pythonanywhere.com (old date → new date)
+========================================
+```
+
+### Failed Entry
+
+```text
+========================================
+Workflow Run: 2026-07-15 04:00:00 UTC
+Status: FAILED
+Trigger: schedule
+Repository: username/PythonAnywhere-Auto-Renew
+Branch: main
+Run ID: 123456790
+Configured accounts:
+- PA: mainuser
+- ACCOUNT_1: accountone
+Renewal details:
+- PA: SUCCESS
+  - Web App: mainuser.pythonanywhere.com (old date → new date)
+- ACCOUNT_1: FAILED
+  - Login failed
 ========================================
 ```
 
@@ -320,14 +448,22 @@ Together, these repositories provide:
 
 ### "Login failed"
 
-- Verify `PA_USERNAME` and `PA_PASSWORD` secrets are correct
+- Verify the relevant `PA_*`, `ACCOUNT_N_*`, or JSON credentials are correct
 - Try logging in manually to confirm credentials work
 - Check if PythonAnywhere changed their login page
 
-### "No extend button found"
+### "No complete accounts were configured"
+
+- Add either a complete `PA_USERNAME` and `PA_PASSWORD` pair.
+- Add at least one complete numbered pair.
+- Add a valid `ACCOUNT_CREDENTIALS_JSON` list or object.
+- Empty numbered slots are ignored. Partially populated slots are reported as
+  incomplete.
+
+### "No web apps found on this account"
 
 - This is normal, your app doesn't need renewal yet
-- The button only appears when renewal is due
+- The renewal form only appears when renewal is due
 - Logged as SUCCESS ✅ (not an error)
 
 ### "Task returned 200 (expiry unchanged... already maxed out)"
@@ -342,7 +478,7 @@ Together, these repositories provide:
 - This bot commits logs every 15 days to prevent this
 - Re-enable manually if needed, then run the workflow
 
-### Log shows "FAILED ❌"
+### Log shows "FAILED"
 
 - Check the GitHub Actions workflow run for detailed error logs
 - Common causes: wrong credentials, PythonAnywhere site changes
@@ -371,3 +507,22 @@ This project is open source and available under the [MIT License](LICENSE).
 Made with ❤️ by [Tanishq Mudaliar](https://github.com/tanishqmudaliar)
 
 **Stop manually clicking that extend button. Automate it! 🚀**
+
+# Update
+
+## same as before; but this time, you can create any number of env variables:
+
+Create env variables:
+
+ACCOUNT_1_USERNAME
+ACCOUNT_1_PASSWORD
+
+ACCOUNT_2_USERNAME
+ACCOUNT_2_PASSWORD
+
+ACCOUNT_3_USERNAME
+ACCOUNT_3_PASSWORD
+
+and so on...
+
+fill it valid data and the code should renew webapps on all the accounts

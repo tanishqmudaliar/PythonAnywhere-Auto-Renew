@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-09-06
+
+### Added
+
+- Multi-account renewal using optional `PA_*` credentials, numbered
+  `ACCOUNT_N_*` pairs, or an `ACCOUNT_CREDENTIALS_JSON` secret.
+- Support for non-consecutive numbered accounts and duplicate-credential
+  detection.
+- `SUCCESS`, `PARTIAL`, and `FAILED` run statuses with detailed per-account
+  logging.
+- GitHub Actions masking for credentials printed during a run.
+
+### Changed
+
+- Renewal results are written directly to
+  `.github/logs/workflow_runs.log`; `renewal_summary.txt` is no longer used.
+- Scheduled-task responses support both list and paginated `results` formats.
+- Incomplete credentials and renewal errors are reported explicitly.
+
+### Fixed
+
+- Unused empty numbered-account slots no longer turn successful runs into
+  `PARTIAL`.
+- Missing CSRF tokens and invalid task refresh responses now fail clearly.
+
 ## [1.3.0] - 2026-07-14
 
 ### Added
@@ -58,7 +83,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `.gitignore` for environment and IDE files
 - Initial README
 
-[Unreleased]: https://github.com/tanishqmudaliar/PythonAnywhere-Auto-Renew/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/tanishqmudaliar/PythonAnywhere-Auto-Renew/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/tanishqmudaliar/PythonAnywhere-Auto-Renew/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/tanishqmudaliar/PythonAnywhere-Auto-Renew/compare/v1.2.1...v1.3.0
 [1.2.1]: https://github.com/tanishqmudaliar/PythonAnywhere-Auto-Renew/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/tanishqmudaliar/PythonAnywhere-Auto-Renew/compare/v1.1.0...v1.2.0
