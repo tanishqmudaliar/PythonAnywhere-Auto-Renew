@@ -75,6 +75,8 @@ def get_accounts_from_env():
     for index in sorted(numbered, key=int):
         username = numbered[index].get("USERNAME", "")
         password = numbered[index].get("PASSWORD", "")
+        if not username and not password:
+            continue
         label = f"ACCOUNT_{index}_USERNAME/ACCOUNT_{index}_PASSWORD"
         if not username or not password:
             incomplete.append(label)
