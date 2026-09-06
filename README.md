@@ -170,6 +170,20 @@ Or click **"Use this template"** on GitHub.
 | `PA_USERNAME` | Your PythonAnywhere username |
 | `PA_PASSWORD` | Your PythonAnywhere password |
 
+For multiple accounts, you can also add numbered secret pairs such as
+`ACCOUNT_1_USERNAME` and `ACCOUNT_1_PASSWORD`. Numbered pairs do not need to be
+consecutive. The original `PA_*` pair is optional and can be used together with
+numbered pairs.
+
+For more than ten numbered accounts, use one `ACCOUNT_CREDENTIALS_JSON` secret:
+
+```json
+[
+  {"username": "account_one", "password": "password_one"},
+  {"username": "account_two", "password": "password_two"}
+]
+```
+
 #### Step 3: Enable Workflow Permissions
 
 1. Go to **Settings** → **Actions** → **General**
@@ -241,8 +255,11 @@ PythonAnywhere-Auto-Renew/
 
 | Variable      | Description             | Required |
 | ------------- | ----------------------- | -------- |
-| `PA_USERNAME` | PythonAnywhere username | Yes      |
-| `PA_PASSWORD` | PythonAnywhere password | Yes      |
+| `PA_USERNAME` | Optional PythonAnywhere username | No |
+| `PA_PASSWORD` | Optional PythonAnywhere password | No |
+| `ACCOUNT_N_USERNAME` | Optional numbered account username | No |
+| `ACCOUNT_N_PASSWORD` | Optional numbered account password | No |
+| `ACCOUNT_CREDENTIALS_JSON` | Optional JSON list or object of accounts | No |
 
 ### Schedule Customization
 

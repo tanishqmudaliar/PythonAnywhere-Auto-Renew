@@ -31,6 +31,27 @@ jobs:
         env:
           PA_USERNAME: ${{ secrets.PA_USERNAME }}
           PA_PASSWORD: ${{ secrets.PA_PASSWORD }}
+          ACCOUNT_1_USERNAME: ${{ secrets.ACCOUNT_1_USERNAME }}
+          ACCOUNT_1_PASSWORD: ${{ secrets.ACCOUNT_1_PASSWORD }}
+          ACCOUNT_2_USERNAME: ${{ secrets.ACCOUNT_2_USERNAME }}
+          ACCOUNT_2_PASSWORD: ${{ secrets.ACCOUNT_2_PASSWORD }}
+          ACCOUNT_3_USERNAME: ${{ secrets.ACCOUNT_3_USERNAME }}
+          ACCOUNT_3_PASSWORD: ${{ secrets.ACCOUNT_3_PASSWORD }}
+          ACCOUNT_4_USERNAME: ${{ secrets.ACCOUNT_4_USERNAME }}
+          ACCOUNT_4_PASSWORD: ${{ secrets.ACCOUNT_4_PASSWORD }}
+          ACCOUNT_5_USERNAME: ${{ secrets.ACCOUNT_5_USERNAME }}
+          ACCOUNT_5_PASSWORD: ${{ secrets.ACCOUNT_5_PASSWORD }}
+          ACCOUNT_6_USERNAME: ${{ secrets.ACCOUNT_6_USERNAME }}
+          ACCOUNT_6_PASSWORD: ${{ secrets.ACCOUNT_6_PASSWORD }}
+          ACCOUNT_7_USERNAME: ${{ secrets.ACCOUNT_7_USERNAME }}
+          ACCOUNT_7_PASSWORD: ${{ secrets.ACCOUNT_7_PASSWORD }}
+          ACCOUNT_8_USERNAME: ${{ secrets.ACCOUNT_8_USERNAME }}
+          ACCOUNT_8_PASSWORD: ${{ secrets.ACCOUNT_8_PASSWORD }}
+          ACCOUNT_9_USERNAME: ${{ secrets.ACCOUNT_9_USERNAME }}
+          ACCOUNT_9_PASSWORD: ${{ secrets.ACCOUNT_9_PASSWORD }}
+          ACCOUNT_10_USERNAME: ${{ secrets.ACCOUNT_10_USERNAME }}
+          ACCOUNT_10_PASSWORD: ${{ secrets.ACCOUNT_10_PASSWORD }}
+          ACCOUNT_CREDENTIALS_JSON: ${{ secrets.ACCOUNT_CREDENTIALS_JSON }}
         run: python3 renew_python_anywhere.py
 
       - name: Keep Alive Workflow (Success)
@@ -42,28 +63,8 @@ jobs:
           # Create logs directory if it doesn't exist
           mkdir -p .github/logs
 
-          # Create or append to workflow log file
           LOG_FILE=".github/logs/workflow_runs.log"
           TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
-
-          echo "========================================" >> $LOG_FILE
-          echo "Workflow Run: $TIMESTAMP" >> $LOG_FILE
-          echo "Status: SUCCESS ✅" >> $LOG_FILE
-          echo "Trigger: ${{ github.event_name }}" >> $LOG_FILE
-          echo "Repository: ${{ github.repository }}" >> $LOG_FILE
-          echo "Branch: ${{ github.ref_name }}" >> $LOG_FILE
-          echo "Run ID: ${{ github.run_id }}" >> $LOG_FILE
-          echo "Run Number: ${{ github.run_number }}" >> $LOG_FILE
-
-          echo "Renewed Items:" >> $LOG_FILE
-          if [ -f renewal_summary.txt ]; then
-            cat renewal_summary.txt >> $LOG_FILE
-          else
-            echo "- None" >> $LOG_FILE
-          fi
-
-          echo "========================================" >> $LOG_FILE
-          echo "" >> $LOG_FILE
 
           # Commit the log
           git add $LOG_FILE
@@ -82,27 +83,8 @@ jobs:
           # Create logs directory if it doesn't exist
           mkdir -p .github/logs
 
-          # Create or append to workflow log file
           LOG_FILE=".github/logs/workflow_runs.log"
           TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
-
-          echo "========================================" >> $LOG_FILE
-          echo "Workflow Run: $TIMESTAMP" >> $LOG_FILE
-          echo "Status: FAILED ❌" >> $LOG_FILE
-          echo "Trigger: ${{ github.event_name }}" >> $LOG_FILE
-          echo "Repository: ${{ github.repository }}" >> $LOG_FILE
-          echo "Branch: ${{ github.ref_name }}" >> $LOG_FILE
-          echo "Run ID: ${{ github.run_id }}" >> $LOG_FILE
-          echo "Run Number: ${{ github.run_number }}" >> $LOG_FILE
-          echo "Note: Check GitHub Actions logs for error details" >> $LOG_FILE
-
-          if [ -f renewal_summary.txt ]; then
-            echo "Renewed Items (Partial/Failed Run):" >> $LOG_FILE
-            cat renewal_summary.txt >> $LOG_FILE
-          fi
-
-          echo "========================================" >> $LOG_FILE
-          echo "" >> $LOG_FILE
 
           # Commit the log
           git add $LOG_FILE
