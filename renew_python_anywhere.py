@@ -61,8 +61,11 @@ def get_accounts_from_env():
     legacy_password = os.environ.get("PA_PASSWORD", "").strip()
     if legacy_username or legacy_password:
         if legacy_username and legacy_password:
-            seen_credentials.add((legacy_username, legacy_password))
-            accounts.append(("PA", legacy_username, legacy_password))
+            if (legacy_username, legacy_password) in seen_credentials:
+                warnings.append("PA_USERNAME/PA_PASSWORD (duplicate credentials, skipped)")
+            else:
+                seen_credentials.add((legacy_username, legacy_password))
+                accounts.append(("PA", legacy_username, legacy_password))
         else:
             incomplete.append("PA_USERNAME/PA_PASSWORD")
 
