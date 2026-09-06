@@ -16,6 +16,12 @@ LOG_FILE = ".github/logs/workflow_runs.log"
 ACCOUNT_PATTERN = re.compile(r"^ACCOUNT_(\d+)_(USERNAME|PASSWORD)$")
 
 
+def mask(value):
+    """Ask GitHub Actions to redact a value from the live job log."""
+    if value and os.environ.get("GITHUB_ACTIONS") == "true":
+        print(f"::add-mask::{value}")
+
+
 def get_accounts_from_env():
     """Return configured accounts, incomplete pairs, and duplicate warnings."""
     accounts = []
@@ -56,6 +62,8 @@ def get_accounts_from_env():
                 continue
             seen_credentials.add((username, password))
             accounts.append((label, username, password))
+            mask(username)
+            mask(password)
 
     legacy_username = os.environ.get("PA_USERNAME", "").strip()
     legacy_password = os.environ.get("PA_PASSWORD", "").strip()
@@ -66,6 +74,8 @@ def get_accounts_from_env():
             else:
                 seen_credentials.add((legacy_username, legacy_password))
                 accounts.append(("PA", legacy_username, legacy_password))
+                mask(legacy_username)
+                mask(legacy_password)
         else:
             incomplete.append("PA_USERNAME/PA_PASSWORD")
 
@@ -89,6 +99,8 @@ def get_accounts_from_env():
             continue
         seen_credentials.add((username, password))
         accounts.append((f"ACCOUNT_{index}", username, password))
+        mask(username)
+        mask(password)
 
     return accounts, incomplete, warnings
 
@@ -192,6 +204,8 @@ def renew_scheduled_tasks(session, username):
     print("🗓️ Checking scheduled tasks...")
     time.sleep(1)
     csrf_token = session.cookies.get("csrftoken")
+    if not csrf_token:
+        return False, ["Scheduled tasks: missing CSRF token"]
     response = session.get(
         tasks_api_url, headers={"Referer": tasks_page_url}, timeout=10
     )
@@ -200,9 +214,13 @@ def renew_scheduled_tasks(session, username):
         return False, [f"Scheduled tasks: fetch failed, status {response.status_code}"]
 
     try:
-        tasks = response.json()
+        payload = response.json()
     except ValueError:
         return False, ["Scheduled tasks: response was not valid JSON"]
+
+    tasks = payload.get("results") if isinstance(payload, dict) else payload
+    if not isinstance(tasks, list):
+        return False, ["Scheduled tasks: response did not contain a task list"]
 
     if not tasks:
         print("ℹ️ No scheduled tasks found on this account.")
@@ -239,7 +257,14 @@ def renew_scheduled_tasks(session, username):
             continue
         new_expiry = old_expiry
         try:
-            tasks_after = refreshed.json()
+            refreshed_payload = refreshed.json()
+            tasks_after = (
+                refreshed_payload.get("results")
+                if isinstance(refreshed_payload, dict)
+                else refreshed_payload
+            )
+            if not isinstance(tasks_after, list):
+                raise ValueError("response did not contain a task list")
             new_expiry = next(
                 (
                     task_after.get("expiry")
