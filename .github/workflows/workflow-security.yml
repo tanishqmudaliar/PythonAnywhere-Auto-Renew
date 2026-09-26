@@ -1,0 +1,32 @@
+name: Workflow security
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - ".github/workflows/**"
+      - ".github/dependabot.yml"
+  pull_request:
+    paths:
+      - ".github/workflows/**"
+      - ".github/dependabot.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  zizmor:
+    name: Audit GitHub Actions workflows
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Run zizmor
+        uses: zizmorcore/zizmor-action@0fa1882f994fbd81a47ab0804f93354f5ea40147 # v0.2.0
+        with:
+          persona: pedantic
+          min-severity: medium
+          min-confidence: medium
